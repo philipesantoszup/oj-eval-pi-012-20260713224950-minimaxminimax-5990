@@ -92,7 +92,7 @@ public:
 		using value_type = typename linked_hashmap::value_type;
 		using pointer = value_type*;
 		using reference = value_type&;
-		using iterator_category = std::output_iterator_tag;
+		using iterator_category = std::bidirectional_iterator_tag;
 
 
 		iterator() : node(nullptr), map(nullptr) {
@@ -340,13 +340,35 @@ public:
 	 */
 	T & operator[](const Key &key) {
 		Node* node = findNode(key);
-		if (node == nullptr) {
-			// Key doesn't exist, insert a new element
-			value_type newValue(key, T());
-			insert(newValue);
-			node = findNode(key);
+		if (node != nullptr) {
+			return node->data.second;
 		}
-		return node->data.second;
+		// Key doesn't exist, create new element
+		// Check if we need to resize
+		if (listSize >= bucketSize * loadFactor) {
+			resize(bucketSize * 2);
+		}
+		
+		// Create new value with default T
+		value_type newValue(key, T());
+		
+		// Create new node and add to linked list (at the end)
+		Node* newNode = new Node(newValue, tail, nullptr);
+		if (tail != nullptr) {
+			tail->next = newNode;
+		} else {
+			head = newNode;
+		}
+		tail = newNode;
+		
+		// Add to hash table
+		size_t bucketIndex = hash(key) % bucketSize;
+		BucketNode* bucketNode = new BucketNode(newNode, bucketArray[bucketIndex]);
+		bucketArray[bucketIndex] = bucketNode;
+		
+		listSize++;
+		
+		return newNode->data.second;
 	}
  
 	/**
