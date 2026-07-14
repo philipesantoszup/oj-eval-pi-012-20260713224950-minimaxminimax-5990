@@ -339,36 +339,15 @@ public:
 	 *   performing an insertion if such key does not already exist.
 	 */
 	T & operator[](const Key &key) {
+		// Try to find existing key first
 		Node* node = findNode(key);
 		if (node != nullptr) {
 			return node->data.second;
 		}
-		// Key doesn't exist, create new element
-		// Check if we need to resize
-		if (listSize >= bucketSize * loadFactor) {
-			resize(bucketSize * 2);
-		}
-		
-		// Create new value with default T
-		value_type newValue(key, T());
-		
-		// Create new node and add to linked list (at the end)
-		Node* newNode = new Node(newValue, tail, nullptr);
-		if (tail != nullptr) {
-			tail->next = newNode;
-		} else {
-			head = newNode;
-		}
-		tail = newNode;
-		
-		// Add to hash table
-		size_t bucketIndex = hash(key) % bucketSize;
-		BucketNode* bucketNode = new BucketNode(newNode, bucketArray[bucketIndex]);
-		bucketArray[bucketIndex] = bucketNode;
-		
-		listSize++;
-		
-		return newNode->data.second;
+		// Key doesn't exist, insert default-constructed value
+		// This calls insert which handles resizing and creates new node properly
+		auto result = insert(value_type(key, T()));
+		return result.first->second;
 	}
  
 	/**
